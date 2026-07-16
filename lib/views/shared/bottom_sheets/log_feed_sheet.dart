@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultrypro/models/app_model.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/custom_form_field.dart';
-import 'package:poultrypro/views/shared/bottom_sheets/feed_provider.dart';
+import 'package:poultrypro/viewModels/Providers/feed_provider.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/sheet_header.dart';
 
 class LogFeedSheet extends ConsumerStatefulWidget {

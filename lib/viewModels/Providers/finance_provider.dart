@@ -1,31 +1,41 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultrypro/models/app_model.dart';
+import 'package:poultrypro/models/database_helper.dart';
 
 class FinanceNotifier extends Notifier<List<AppTransaction>> {
+  final dbHelper = DatabaseHelper(); // Get our SQLite instance
+
   @override
   List<AppTransaction> build() {
-    // This is our initial state: Dummy transactions
-    return [
-      AppTransaction(
-        id: 1,
-        isIncome: true,
-        amount: 12000.0,
-        category: 'Egg Sales (Wholesale)',
-        date: DateTime.now().subtract(const Duration(hours: 2)),
-      ),
-      AppTransaction(
-        id: 2,
-        isIncome: false,
-        amount: 4500.0,
-        category: 'Feed Purchase (Layer Mash)',
-        date: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-    ];
+    // 2. Load transactions from the hard drive when the app starts
+    _loadTransactions();
+
+    // Return empty temporarily while it loads
+    return [];
   }
 
-  void addTransaction(AppTransaction transaction) {
-    // We spread the NEW transaction first, so it appears at the top of the list!
-    state = [transaction, ...state];
+  // --- READ FROM SQLITE ---
+  Future<void> _loadTransactions() async {
+    final transactionsFromDb = await dbHelper.getTransactions();
+    state = transactionsFromDb; // Update UI with saved data
+  }
+
+  // --- WRITE TO SQLITE ---
+  Future<void> addTransaction(AppTransaction newTx) async {
+    // 1. Insert into SQLite. It returns the newly generated permanent ID.
+    final insertedId = await dbHelper.insertTransaction(newTx);
+
+    // 2. Create a copy of the transaction, attaching the REAL ID
+    final txWithRealId = AppTransaction(
+      id: insertedId,
+      isIncome: newTx.isIncome,
+      amount: newTx.amount,
+      category: newTx.category,
+      date: newTx.date,
+    );
+
+    // 3. Update the UI state to show the new transaction at the top
+    state = [txWithRealId, ...state];
   }
 }
 

@@ -2,35 +2,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultrypro/models/app_model.dart';
 import 'package:poultrypro/models/database_helper.dart';
 
-class EggNotifier extends Notifier<List<EggLog>> {
+class FeedNotifier extends Notifier<List<FeedLog>> {
   final dbHelper = DatabaseHelper(); // Get SQLite instance
 
   @override
-  List<EggLog> build() {
-    // 2. Load egg logs from hard drive on startup
-    _loadEggs();
+  List<FeedLog> build() {
+    // 2. Load feed logs from hard drive on startup
+    _loadFeedLogs();
 
     // Return empty list while it loads
     return [];
   }
 
   // --- READ FROM SQLITE ---
-  Future<void> _loadEggs() async {
-    final logsFromDb = await dbHelper.getEggLogs();
+  Future<void> _loadFeedLogs() async {
+    final logsFromDb = await dbHelper.getFeedLogs();
     state = logsFromDb; // Update UI
   }
 
   // --- WRITE TO SQLITE ---
-  Future<void> addEggLog(EggLog newLog) async {
+  Future<void> addFeedLog(FeedLog newLog) async {
     // 1. Save to SQLite and get the permanent ID
-    final insertedId = await dbHelper.insertEggLog(newLog);
+    final insertedId = await dbHelper.insertFeedLog(newLog);
 
     // 2. Attach the real ID to a copy of the log
-    final logWithRealId = EggLog(
+    final logWithRealId = FeedLog(
       id: insertedId,
       flockId: newLog.flockId,
-      totalEggs: newLog.totalEggs,
-      badEggs: newLog.badEggs,
+      quantityKg: newLog.quantityKg,
+      feedType: newLog.feedType,
       date: newLog.date,
     );
 
@@ -39,6 +39,6 @@ class EggNotifier extends Notifier<List<EggLog>> {
   }
 }
 
-final eggProvider = NotifierProvider<EggNotifier, List<EggLog>>(() {
-  return EggNotifier();
+final feedProvider = NotifierProvider<FeedNotifier, List<FeedLog>>(() {
+  return FeedNotifier();
 });

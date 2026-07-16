@@ -1,31 +1,42 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultrypro/models/app_model.dart';
+import 'package:poultrypro/models/database_helper.dart';
 
 class HealthNotifier extends Notifier<List<HealthLog>> {
+  final dbHelper = DatabaseHelper(); // Get SQLite instance
+
   @override
   List<HealthLog> build() {
-    // Dummy initial state
-    return [
-      HealthLog(
-        id: 1,
-        flockId: 1,
-        isMortality: true,
-        birdsLost: 2,
-        details: 'Suspected heat stress',
-        date: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-      HealthLog(
-        id: 2,
-        flockId: 2,
-        isMortality: false,
-        details: 'Newcastle (NDV) Vaccine via water',
-        date: DateTime.now().subtract(const Duration(days: 2)),
-      ),
-    ];
+    // 2. Load health logs from hard drive on startup
+    _loadHealthLogs();
+
+    // Return empty list while it loads
+    return [];
   }
 
-  void addHealthLog(HealthLog newLog) {
-    state = [newLog, ...state]; // Add to top of list
+  // --- READ FROM SQLITE ---
+  Future<void> _loadHealthLogs() async {
+    final logsFromDb = await dbHelper.getHealthLogs();
+    state = logsFromDb; // Update UI
+  }
+
+  // --- WRITE TO SQLITE ---
+  Future<void> addHealthLog(HealthLog newLog) async {
+    // 1. Save to SQLite and get the permanent ID
+    final insertedId = await dbHelper.insertHealthLog(newLog);
+
+    // 2. Attach the real ID to a copy of the log
+    final logWithRealId = HealthLog(
+      id: insertedId,
+      flockId: newLog.flockId,
+      isMortality: newLog.isMortality,
+      birdsLost: newLog.birdsLost,
+      details: newLog.details,
+      date: newLog.date,
+    );
+
+    // 3. Update the UI state
+    state = [logWithRealId, ...state];
   }
 }
 
