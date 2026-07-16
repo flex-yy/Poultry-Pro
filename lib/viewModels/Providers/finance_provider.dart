@@ -9,7 +9,7 @@ class FinanceNotifier extends Notifier<List<AppTransaction>> {
       AppTransaction(
         id: 1,
         isIncome: true,
-        amount: 1200.0,
+        amount: 12000.0,
         category: 'Egg Sales (Wholesale)',
         date: DateTime.now().subtract(const Duration(hours: 2)),
       ),

@@ -48,7 +48,6 @@ class _LogCollectionSheetState extends ConsumerState<LogCollectionSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Padding handles the keyboard sliding up
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
         left: 24,

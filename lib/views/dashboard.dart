@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultrypro/core/theme/app_theme.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:poultrypro/viewModels/Providers/egg_provider.dart';
+import 'package:poultrypro/viewModels/Providers/finance_provider.dart';
 import 'package:poultrypro/viewModels/Providers/flock_provider.dart';
 import 'package:poultrypro/views/dashboard/widgets/actions_card.dart';
 import 'package:poultrypro/views/dashboard/widgets/net_profit_card.dart';
@@ -14,6 +15,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final transactions = ref.watch(financeProvider);
     final eggLogs = ref.watch(eggProvider);
     final flocks = ref.watch(flockProvider);
     final totalBirds = flocks.fold(0, (sum, flock) => sum + flock.currentCount);
@@ -24,9 +26,21 @@ class DashboardScreen extends ConsumerWidget {
       if (log.date.year == today.year &&
           log.date.month == today.month &&
           log.date.day == today.day) {
-        eggsToday += log.totalEggs;
+        eggsToday += (log.totalEggs - log.badEggs);
       }
     }
+
+    // Calculate net profit based on transactions
+    double totalIncome = 0;
+    double totalExpense = 0;
+    for (var tx in transactions) {
+      if (tx.isIncome) {
+        totalIncome += tx.amount;
+      } else {
+        totalExpense += tx.amount;
+      }
+    }
+    double netProfit = totalIncome - totalExpense;
 
     return SafeArea(
       child: Column(
@@ -144,7 +158,7 @@ class DashboardScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  NetProfitCard(),
+                  NetProfitCard(netProfit: netProfit),
                   const SizedBox(height: 32),
                   Container(
                     padding: const EdgeInsets.all(20),

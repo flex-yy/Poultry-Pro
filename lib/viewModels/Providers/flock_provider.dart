@@ -8,7 +8,7 @@ class FlockNotifier extends Notifier<List<Flock>> {
     return [
       Flock(
         id: 1,
-        name: 'Batch A - Layers',
+        name: 'Batch Alpha - Layers',
         birdType: 'Layers',
         initialCount: 2500,
         currentCount: 2450,
@@ -35,6 +35,25 @@ class FlockNotifier extends Notifier<List<Flock>> {
     // In Riverpod, state is immutable. We create a NEW list containing the old items + the new item.
     // Later, this is where we will insert into SQLite FIRST, then update the state with the DB result.
     state = [...state, newFlock];
+  }
+
+  void recordMortality(int flockId, int birdsLost) {
+    state = state.map((flock) {
+      if (flock.id == flockId) {
+        // Create a copy of the flock with the new, reduced count
+        return Flock(
+          id: flock.id,
+          name: flock.name,
+          birdType: flock.birdType,
+          initialCount: flock.initialCount,
+          currentCount:
+              flock.currentCount - birdsLost, // Subtract the dead birds
+          breed: flock.breed,
+          dateAdded: flock.dateAdded,
+        );
+      }
+      return flock;
+    }).toList();
   }
 }
 

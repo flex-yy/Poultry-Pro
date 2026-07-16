@@ -1,17 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultrypro/core/theme/app_theme.dart';
+import 'package:poultrypro/models/app_model.dart';
+import 'package:poultrypro/viewModels/Providers/flock_provider.dart';
+import 'package:poultrypro/viewModels/Providers/health_provider.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/custom_form_field.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/sheet_header.dart';
 
-class LogHealthSheet extends StatefulWidget {
+class LogHealthSheet extends ConsumerStatefulWidget {
   const LogHealthSheet({super.key});
 
   @override
-  State<LogHealthSheet> createState() => _LogHealthSheetState();
+  ConsumerState<LogHealthSheet> createState() => _LogHealthSheetState();
 }
 
-class _LogHealthSheetState extends State<LogHealthSheet> {
+class _LogHealthSheetState extends ConsumerState<LogHealthSheet> {
   bool isMortality = true; // Toggle between Mortality and Vaccination
+  // Controllers for Mortality
+  final _deadbirdsController = TextEditingController();
+  final _causeController = TextEditingController();
+
+  // Controllers for Vaccination
+  final _vaccineNameController = TextEditingController();
+  final _adminMethodController = TextEditingController();
+
+  @override
+  void dispose() {
+    _deadbirdsController.dispose();
+    _causeController.dispose();
+    _vaccineNameController.dispose();
+    _adminMethodController.dispose();
+    super.dispose();
+  }
+
+  void _saveLog() {
+    final int lostCount = isMortality
+        ? (int.tryParse(_deadbirdsController.text) ?? 0)
+        : 0;
+
+    final newLog = HealthLog(
+      id: DateTime.now().millisecondsSinceEpoch % 10000,
+      flockId: 1, // Hardcoded for now
+      isMortality: isMortality,
+      birdsLost: isMortality
+          ? (int.tryParse(_deadbirdsController.text) ?? 0)
+          : null,
+      details: isMortality
+          ? _causeController.text
+          : '${_vaccineNameController.text} (${_adminMethodController.text})',
+      date: DateTime.now(),
+    );
+
+    ref.read(healthProvider.notifier).addHealthLog(newLog);
+
+    if (isMortality && lostCount > 0) {
+      ref
+          .read(flockProvider.notifier)
+          .recordMortality(1, lostCount); // Hardcoded flockId 1 for now
+    }
+
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +83,7 @@ class _LogHealthSheetState extends State<LogHealthSheet> {
           const SheetHeader(title: 'Log Health Event'),
           const SizedBox(height: 24),
 
-          // Custom Segmented Control for Health Type
+          // Custom Segmented Control
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -128,23 +177,27 @@ class _LogHealthSheetState extends State<LogHealthSheet> {
 
           // Conditionally render fields based on toggle
           if (isMortality) ...[
-            const CustomFormField(
+            CustomFormField(
+              controller: _deadbirdsController,
               label: 'Number of Birds Lost',
               hint: '0',
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
-            const CustomFormField(
+            CustomFormField(
+              controller: _causeController,
               label: 'Suspected Cause (Optional)',
               hint: 'e.g. Heat stress',
             ),
           ] else ...[
-            const CustomFormField(
+            CustomFormField(
+              controller: _vaccineNameController,
               label: 'Vaccine / Medication Name',
               hint: 'e.g. Newcastle (NDV)',
             ),
             const SizedBox(height: 16),
-            const CustomFormField(
+            CustomFormField(
+              controller: _adminMethodController,
               label: 'Administration Method',
               hint: 'e.g. Drinking Water',
             ),
@@ -165,7 +218,7 @@ class _LogHealthSheetState extends State<LogHealthSheet> {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              onPressed: () => Navigator.pop(context),
+              onPressed: _saveLog,
               child: Text(
                 isMortality ? 'Log Mortality' : 'Log Vaccination',
                 style: const TextStyle(

@@ -3,7 +3,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:poultrypro/core/theme/app_theme.dart';
 
 class NetProfitCard extends StatelessWidget {
-  const NetProfitCard({super.key});
+  const NetProfitCard({super.key, required this.netProfit});
+  final double netProfit;
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +88,7 @@ class NetProfitCard extends StatelessWidget {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  '₵3,900',
+                  '₵ ${netProfit.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.w900,
