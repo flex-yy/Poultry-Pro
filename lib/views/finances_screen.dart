@@ -21,11 +21,29 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final transactions = ref.watch(financeProvider);
+    // 1. WATCH all data
+    final allTransactions = ref.watch(financeProvider);
+
+    // 2. Filter data based on the selected tab
+    final now = DateTime.now();
+    final displayedTransactions = allTransactions.where((tx) {
+      if (_activeFilterIndex == 0) {
+        // Weekly: Within the last 7 days
+        return now.difference(tx.date).inDays <= 7;
+      } else if (_activeFilterIndex == 1) {
+        // Monthly: Same month and year
+        return tx.date.month == now.month && tx.date.year == now.year;
+      } else {
+        // Flock Cycle / All Time
+        return true;
+      }
+    }).toList();
+
+    // 3. Dynamic Math Calculations (using the FILTERED list!)
     double totalIncome = 0;
     double totalExpense = 0;
 
-    for (var tx in transactions) {
+    for (var tx in displayedTransactions) {
       if (tx.isIncome) {
         totalIncome += tx.amount;
       } else {
@@ -112,7 +130,7 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
             ),
           ),
 
-          // --- SCROLLABLE CONTENT (Placeholder) ---
+          // --- SCROLLABLE CONTENT ---
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.only(
@@ -124,7 +142,7 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Hero Card
+                  // 1. Hero Card - Pass the calculated profit!
                   FinanceHeroCard(netProfit: netProfit),
                   const SizedBox(height: 24),
 
@@ -245,7 +263,11 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Recent Transactions',
+                        _activeFilterIndex == 0
+                            ? 'This Week\'s Transactions'
+                            : _activeFilterIndex == 1
+                            ? 'This Month\'s Transactions'
+                            : 'All Transactions',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -266,11 +288,19 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 4. Transactions List
-                  if (transactions.isEmpty)
-                    const Center(child: Text('No transactions yet.'))
+                  // 4. Transactions List (Dynamically mapped to the FILTERED list!)
+                  if (displayedTransactions.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Text(
+                          'No transactions in this period.',
+                          style: TextStyle(color: AppColors.textHint),
+                        ),
+                      ),
+                    )
                   else
-                    ...transactions.map((tx) {
+                    ...displayedTransactions.map((tx) {
                       return TransactionItem(
                         title: tx.category,
                         subtitle:
@@ -291,6 +321,4 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
       ),
     );
   }
-
-  // Make sure you deleted the _buildFilterTab helper function down here!
 }

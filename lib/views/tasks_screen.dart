@@ -1,24 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:poultrypro/core/theme/app_theme.dart';
+import 'package:poultrypro/viewModels/Providers/feed_provider.dart';
+import 'package:poultrypro/viewModels/Providers/flock_provider.dart';
+import 'package:poultrypro/viewModels/Providers/health_provider.dart';
 import 'package:poultrypro/views/tasks&health/widgets/day_item.dart';
 import 'package:poultrypro/views/tasks&health/widgets/timeline_task_item.dart';
-import 'package:poultrypro/views/tasks&health/widgets/urgent_task_card.dart';
 
-class TasksScreen extends StatefulWidget {
+class TasksScreen extends ConsumerStatefulWidget {
   const TasksScreen({super.key});
 
   @override
-  State<TasksScreen> createState() => _TasksScreenState();
+  ConsumerState<TasksScreen> createState() => _TasksScreenState();
 }
 
-class _TasksScreenState extends State<TasksScreen> {
+class _TasksScreenState extends ConsumerState<TasksScreen> {
   // Track which date is currently selected in the calendar
   int _selectedDate = 14;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final healthLogs = ref.watch(healthProvider);
+    final feedLogs = ref.watch(feedProvider);
+    final flocks = ref.watch(flockProvider);
 
     return SafeArea(
       child: Column(
@@ -33,7 +40,6 @@ class _TasksScreenState extends State<TasksScreen> {
             ),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
-              // Subtle shadow to lift the header above the scrolling content
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
@@ -44,7 +50,6 @@ class _TasksScreenState extends State<TasksScreen> {
             ),
             child: Column(
               children: [
-                // 1. Title Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -58,7 +63,6 @@ class _TasksScreenState extends State<TasksScreen> {
                             : AppColors.lightTextPrimary,
                       ),
                     ),
-                    // Circular Calendar Icon Button
                     Container(
                       height: 40,
                       width: 40,
@@ -70,16 +74,12 @@ class _TasksScreenState extends State<TasksScreen> {
                       child: IconButton(
                         icon: const Icon(LucideIcons.calendarDays, size: 20),
                         color: AppColors.textSecondary,
-                        onPressed: () {
-                          // Would be added soon
-                        },
+                        onPressed: () {},
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-
-                // 2. Weekly Calendar Strip
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -139,37 +139,8 @@ class _TasksScreenState extends State<TasksScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Action Required Section
-                  Row(
-                    children: const [
-                      Icon(
-                        LucideIcons.alertTriangle,
-                        size: 16,
-                        color: AppColors.error,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'ACTION REQUIRED',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.error,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const UrgentTaskCard(
-                    title: 'Gumboro (IBD) Vaccine',
-                    flockName: 'Batch C - Broilers',
-                    dateMissed: 'Monday, Jul 12',
-                  ),
-                  const SizedBox(height: 32),
-
-                  // 2. Today's Timeline Section
                   const Text(
-                    'TODAY, JUL 14',
+                    'RECENT LOGS & TASKS',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -184,7 +155,7 @@ class _TasksScreenState extends State<TasksScreen> {
                     children: [
                       // The continuous vertical background line
                       Positioned(
-                        left: 23, // Centered behind the 48px icons
+                        left: 23,
                         top: 16,
                         bottom: 32,
                         child: Container(
@@ -195,34 +166,77 @@ class _TasksScreenState extends State<TasksScreen> {
                         ),
                       ),
 
-                      // The List of Task Items
+                      // Dynamic List of Database Items
                       Column(
                         children: [
-                          const TimelineTaskItem(
-                            title: 'Morning Feeding',
-                            time: '07:00 AM',
-                            subtitle: 'All Active Flocks (Added 120kg Mash)',
-                            icon: LucideIcons.wheat,
-                            iconColor: AppColors.primary,
-                            iconBgColor: AppColors.primaryLight,
-                            isCompleted: true,
-                          ),
-                          TimelineTaskItem(
-                            title: 'Routine Health Check',
-                            time: '10:00 AM',
-                            subtitle: 'Batch B - Investigate mortality drop',
-                            icon: LucideIcons.activity,
-                            iconColor: Colors.amber.shade600,
-                            iconBgColor: Colors.amber.shade100,
-                          ),
-                          TimelineTaskItem(
-                            title: 'Water Vitamins (Day 3)',
-                            time: '02:00 PM',
-                            subtitle: 'Batch A - Layers',
-                            icon: LucideIcons.pill,
-                            iconColor: Colors.purple.shade600,
-                            iconBgColor: Colors.purple.shade100,
-                          ),
+                          if (healthLogs.isEmpty && feedLogs.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(32.0),
+                              child: Center(
+                                child: Text(
+                                  'No recent activity logged.',
+                                  style: TextStyle(color: AppColors.textHint),
+                                ),
+                              ),
+                            ),
+
+                          // Map over the Health Logs from SQLite
+                          ...healthLogs.map((log) {
+                            // Find the flock name, or default to generic text if not found
+                            final flockName = flocks.isNotEmpty
+                                ? flocks
+                                      .firstWhere(
+                                        (f) => f.id == log.flockId,
+                                        orElse: () => flocks.first,
+                                      )
+                                      .name
+                                : 'Unknown Batch';
+
+                            return TimelineTaskItem(
+                              title: log.isMortality
+                                  ? 'Mortality Recorded'
+                                  : 'Vaccination / Meds',
+                              time:
+                                  '${log.date.hour}:${log.date.minute.toString().padLeft(2, '0')}',
+                              subtitle: log.isMortality
+                                  ? '$flockName - Lost ${log.birdsLost} birds (${log.details})'
+                                  : '$flockName - ${log.details}',
+                              icon: log.isMortality
+                                  ? LucideIcons.alertTriangle
+                                  : LucideIcons.pill,
+                              iconColor: log.isMortality
+                                  ? AppColors.error
+                                  : Colors.purple.shade600,
+                              iconBgColor: log.isMortality
+                                  ? AppColors.error.withValues(alpha: 0.1)
+                                  : Colors.purple.shade100,
+                              isCompleted: true,
+                            );
+                          }),
+
+                          // Map over the Feed Logs from SQLite
+                          ...feedLogs.map((log) {
+                            final flockName = flocks.isNotEmpty
+                                ? flocks
+                                      .firstWhere(
+                                        (f) => f.id == log.flockId,
+                                        orElse: () => flocks.first,
+                                      )
+                                      .name
+                                : 'Unknown Batch';
+
+                            return TimelineTaskItem(
+                              title: 'Feed Logged',
+                              time:
+                                  '${log.date.hour}:${log.date.minute.toString().padLeft(2, '0')}',
+                              subtitle:
+                                  '$flockName - ${log.quantityKg}kg of ${log.feedType}',
+                              icon: LucideIcons.wheat,
+                              iconColor: AppColors.primary,
+                              iconBgColor: AppColors.primaryLight,
+                              isCompleted: true,
+                            );
+                          }),
                         ],
                       ),
                     ],

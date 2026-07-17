@@ -18,8 +18,19 @@ class _FlocksScreenState extends ConsumerState<FlocksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. WATCH the provider. Whenever the data changes, this screen automatically rebuilds!
-    final flocksList = ref.watch(flockProvider);
+    // 1. WATCH the provider to get ALL flocks
+    final allFlocks = ref.watch(flockProvider);
+
+    // 2. Filter the flocks based on the active tab!
+    // Active = more than 0 birds. Archived = 0 birds left.
+    final displayedFlocks = allFlocks.where((flock) {
+      if (_activeTabIndex == 0) {
+        return flock.currentCount > 0;
+      } else {
+        return flock.currentCount <= 0;
+      }
+    }).toList();
+
     // Check if we are in dark mode for dynamic text colors
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -91,7 +102,7 @@ class _FlocksScreenState extends ConsumerState<FlocksScreen> {
                           color: AppColors.textSecondary,
                         ),
                         onPressed: () {
-                          // would be implemented soon
+                          // Filter functionality
                         },
                       ),
                     ),
@@ -104,8 +115,8 @@ class _FlocksScreenState extends ConsumerState<FlocksScreen> {
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? AppColors.darkBorder
-                        : AppColors.lightBorder, // Slate 700 or Slate 100
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFF1F5F9), // Slate 700 or Slate 100
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -135,7 +146,8 @@ class _FlocksScreenState extends ConsumerState<FlocksScreen> {
                             ),
                             child: Center(
                               child: Text(
-                                'Active (${flocksList.length})',
+                                // Update this text to show dynamic count of ONLY active flocks!
+                                'Active (${allFlocks.where((f) => f.currentCount > 0).length})',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: _activeTabIndex == 0
@@ -178,7 +190,8 @@ class _FlocksScreenState extends ConsumerState<FlocksScreen> {
                             ),
                             child: Center(
                               child: Text(
-                                'Archived',
+                                // Update this text to show dynamic count of ONLY archived flocks!
+                                'Archived (${allFlocks.where((f) => f.currentCount <= 0).length})',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: _activeTabIndex == 1
@@ -202,10 +215,17 @@ class _FlocksScreenState extends ConsumerState<FlocksScreen> {
             ),
           ),
 
-          // --- SCROLLABLE LIST SECTION (Placeholder) ---
+          // --- SCROLLABLE LIST SECTION ---
           Expanded(
-            child: flocksList.isEmpty
-                ? Center(child: Text('No flocks available.'))
+            // 3. Use the displayedFlocks variable instead of the full list!
+            child: displayedFlocks.isEmpty
+                ? Center(
+                    child: Text(
+                      _activeTabIndex == 0
+                          ? "No active flocks."
+                          : "No archived flocks.",
+                    ),
+                  )
                 : ListView(
                     padding: const EdgeInsets.only(
                       left: 24,
@@ -213,15 +233,20 @@ class _FlocksScreenState extends ConsumerState<FlocksScreen> {
                       bottom: 100,
                       top: 8,
                     ),
-                    children: flocksList.map((flock) {
+                    // Dynamically map our FILTERED data models!
+                    children: displayedFlocks.map((flock) {
+                      // Calculate age dynamically
                       final days = DateTime.now()
                           .difference(flock.dateAdded)
                           .inDays;
                       final ageString = days > 14
                           ? 'Week ${days ~/ 7}'
                           : 'Day $days';
+
                       return FlockCard(
-                        status: 'Active',
+                        status: _activeTabIndex == 0
+                            ? 'Active'
+                            : 'Depleted', // Change status badge text
                         id: '#BATCH-${flock.id.toString().padLeft(3, '0')}',
                         name: flock.name,
                         details:
@@ -237,51 +262,6 @@ class _FlocksScreenState extends ConsumerState<FlocksScreen> {
                       );
                     }).toList(),
                   ),
-
-            // children: [
-            //   FlockCard(
-            //     status: 'Active',
-            //     id: '#LAY-2023-A',
-            //     name: 'Batch A - Layers',
-            //     details: 'Isa Brown • Housed Oct 12',
-            //     age: 'Week 32',
-            //     birdCount: '2,450',
-            //     metricText: 'Production: 92% today',
-            //     accentColor: AppColors.primary,
-            //     statusBgColor: AppColors.primaryLight,
-            //     statusTextColor: AppColors.primaryDark,
-            //     metricIcon: LucideIcons.trendingUp,
-            //     metricIconColor: AppColors.primary,
-            //   ),
-            //   FlockCard(
-            //     status: 'Active',
-            //     id: '#BRO-2024-C',
-            //     name: 'Batch C - Broilers',
-            //     details: 'Cobb 500 • Housed Jan 05',
-            //     age: 'Day 28',
-            //     birdCount: '1,000',
-            //     metricText: 'Target Weight: 1.8 kg avg',
-            //     accentColor: Colors.blue.shade500,
-            //     statusBgColor: Colors.blue.shade50,
-            //     statusTextColor: Colors.blue.shade700,
-            //     metricIcon: LucideIcons.scale,
-            //     metricIconColor: Colors.blue.shade500,
-            //   ),
-            //   FlockCard(
-            //     status: 'Needs Review',
-            //     id: '#LAY-2022-B',
-            //     name: 'Batch B - Older Layers',
-            //     details: 'Lohmann Brown • Housed Mar 20',
-            //     age: 'Week 72',
-            //     birdCount: '840',
-            //     metricText: 'Production dropped below 60%',
-            //     accentColor: Colors.amber.shade500,
-            //     statusBgColor: Colors.amber.shade50,
-            //     statusTextColor: Colors.amber.shade800,
-            //     metricIcon: LucideIcons.alertCircle,
-            //     metricIconColor: Colors.amber.shade600,
-            //   ),
-            // ],
           ),
         ],
       ),

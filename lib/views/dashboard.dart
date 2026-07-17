@@ -5,7 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:poultrypro/viewModels/Providers/egg_provider.dart';
 import 'package:poultrypro/viewModels/Providers/finance_provider.dart';
 import 'package:poultrypro/viewModels/Providers/flock_provider.dart';
-import 'package:poultrypro/views/dashboard/widgets/actions_card.dart';
+import 'package:poultrypro/viewModels/Providers/health_provider.dart';
 import 'package:poultrypro/views/dashboard/widgets/net_profit_card.dart';
 import 'package:poultrypro/views/dashboard/widgets/recent_act_item.dart';
 import 'package:poultrypro/views/dashboard/widgets/top_stat_card.dart';
@@ -19,14 +19,26 @@ class DashboardScreen extends ConsumerWidget {
     final eggLogs = ref.watch(eggProvider);
     final flocks = ref.watch(flockProvider);
     final totalBirds = flocks.fold(0, (sum, flock) => sum + flock.currentCount);
+    final healthLogs = ref.watch(healthProvider);
 
     final today = DateTime.now();
     int eggsToday = 0;
+    int totalBadEggs = 0;
+    int totalNoEggs = 0;
     for (var log in eggLogs) {
+      totalBadEggs = log.badEggs;
+      // totalNoEggs = (log.totalEggs - log.badEggs);
+      totalNoEggs = log.totalEggs;
       if (log.date.year == today.year &&
           log.date.month == today.month &&
           log.date.day == today.day) {
         eggsToday += (log.totalEggs - log.badEggs);
+      }
+    }
+    int totalMortality = 0;
+    for (var log in healthLogs) {
+      if (log.isMortality && log.birdsLost != null) {
+        totalMortality += log.birdsLost!;
       }
     }
 
@@ -149,7 +161,7 @@ class DashboardScreen extends ConsumerWidget {
                       Expanded(
                         child: TopStatCard(
                           title: 'EGGS TODAY',
-                          value: eggsToday.toString(),
+                          value: '$eggsToday / $totalNoEggs',
                           icon: LucideIcons.egg,
                           iconBgColor: Colors.orange.shade100,
                           iconColor: Colors.orange.shade400,
@@ -157,72 +169,37 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16), // Spacing between rows
+                  // --- 3. Top Stats Row 2 (NEW) ---
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TopStatCard(
+                          title: 'TOTAL BAD EGGS',
+                          value: totalBadEggs.toString(),
+                          icon: Icons.egg_alt,
+                          iconColor: Colors.brown.shade600,
+                          iconBgColor: Colors.brown.shade100,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TopStatCard(
+                          title: 'TOTAL MORTALITY',
+                          value: totalMortality.toString(),
+                          icon: LucideIcons.activity,
+                          iconColor: AppColors.error,
+                          iconBgColor: AppColors.error.withValues(alpha: 0.15),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
                   const SizedBox(height: 16),
                   NetProfitCard(netProfit: netProfit),
                   const SizedBox(height: 32),
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: AppColors.error,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Action Needed',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color:
-                                    Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.lightTextPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        ActionCard(
-                          title: 'Newcastle Vaccination',
-                          subtitle: 'Bravo Broilers • Due Today',
-                          icon: LucideIcons.syringe,
-                          backgroundColor: const Color(0xFFFFF1F2),
-                          iconBackgroundColor: const Color(0xFFFFE4E6),
-                          primaryTextColor: const Color(0xFF9F1239),
-                          secondaryTextColor: const Color(
-                            0xFFBE123C,
-                          ).withValues(alpha: 0.7),
-                        ),
-                        const SizedBox(height: 12),
-                        ActionCard(
-                          title: 'Low Egg Yield Alert',
-                          subtitle: 'Alpha Layers dropped 5% yesterday',
-                          icon: LucideIcons.droplets,
-                          backgroundColor: const Color(0xFFFFFBEB),
-                          iconBackgroundColor: const Color(0xFFFEF3C7),
-                          primaryTextColor: const Color(0xFF92400E),
-                          secondaryTextColor: const Color(
-                            0xFFB45309,
-                          ).withValues(alpha: 0.7),
-                        ),
-                        const SizedBox(height: 32),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
+
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -258,21 +235,51 @@ class DashboardScreen extends ConsumerWidget {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        const RecentActivityItem(
-                          title: 'Egg Sales (Wholesale)',
-                          date: 'Jul 10, 2026 at 4:19 PM',
-                          amount: '+₵4,500',
-                          isIncome: true,
-                          icon: LucideIcons.trendingUp,
-                        ),
-                        const SizedBox(height: 12),
-                        const RecentActivityItem(
-                          title: 'Feed Purchase (Mash)',
-                          date: 'Jul 09, 2026 at 10:15 AM',
-                          amount: '-₵1,200',
-                          isIncome: false,
-                          icon: LucideIcons.shoppingBag,
-                        ),
+
+                        if (transactions.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(24.0),
+                            child: Center(
+                              child: Text(
+                                'No financial activity logged yet.',
+                                style: TextStyle(color: AppColors.textHint),
+                              ),
+                            ),
+                          )
+                        else
+                          // 2. Loop through transactions, take the latest 3, and display them!
+                          ...transactions.take(3).map((tx) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: RecentActivityItem(
+                                title: tx.category,
+                                date:
+                                    '${tx.date.day}/${tx.date.month}/${tx.date.year}', // Format the real date
+                                amount:
+                                    '${tx.isIncome ? '+' : '-'}₵${tx.amount.toStringAsFixed(2)}',
+                                isIncome: tx.isIncome,
+                                icon: tx.isIncome
+                                    ? LucideIcons.trendingUp
+                                    : LucideIcons.shoppingBag,
+                              ),
+                            );
+                          }),
+
+                        // const RecentActivityItem(
+                        //   title: 'Egg Sales (Wholesale)',
+                        //   date: 'Jul 10, 2026 at 4:19 PM',
+                        //   amount: '+₵4,500',
+                        //   isIncome: true,
+                        //   icon: LucideIcons.trendingUp,
+                        // ),
+                        // const SizedBox(height: 12),
+                        // const RecentActivityItem(
+                        //   title: 'Feed Purchase (Mash)',
+                        //   date: 'Jul 09, 2026 at 10:15 AM',
+                        //   amount: '-₵1,200',
+                        //   isIncome: false,
+                        //   icon: LucideIcons.shoppingBag,
+                        // ),
                       ],
                     ),
                   ),

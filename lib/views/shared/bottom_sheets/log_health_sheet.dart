@@ -4,6 +4,7 @@ import 'package:poultrypro/core/theme/app_theme.dart';
 import 'package:poultrypro/models/app_model.dart';
 import 'package:poultrypro/viewModels/Providers/flock_provider.dart';
 import 'package:poultrypro/viewModels/Providers/health_provider.dart';
+import 'package:poultrypro/views/shared/bottom_sheets/custom_dropdown_field.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/custom_form_field.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/sheet_header.dart';
 
@@ -16,6 +17,8 @@ class LogHealthSheet extends ConsumerStatefulWidget {
 
 class _LogHealthSheetState extends ConsumerState<LogHealthSheet> {
   bool isMortality = true; // Toggle between Mortality and Vaccination
+  int? _selectedFlockId; // Dropdown state
+
   // Controllers for Mortality
   final _deadbirdsController = TextEditingController();
   final _causeController = TextEditingController();
@@ -34,6 +37,8 @@ class _LogHealthSheetState extends ConsumerState<LogHealthSheet> {
   }
 
   void _saveLog() {
+    if (_selectedFlockId == null) return; // Prevent saving if no flock chosen
+
     final int lostCount = isMortality
         ? (int.tryParse(_deadbirdsController.text) ?? 0)
         : 0;
@@ -65,6 +70,7 @@ class _LogHealthSheetState extends ConsumerState<LogHealthSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final flocks = ref.watch(flockProvider); // Get the flocks!
 
     return Container(
       padding: EdgeInsets.only(
@@ -169,10 +175,23 @@ class _LogHealthSheetState extends ConsumerState<LogHealthSheet> {
           ),
 
           const SizedBox(height: 24),
-          const CustomFormField(
+          CustomDropdownField<int>(
             label: 'Target Flock',
-            hint: 'e.g. Bravo Broilers',
+            hint: flocks.isEmpty ? 'No flocks available' : 'Select a flock',
+            value: _selectedFlockId,
+            items: flocks.map((flock) {
+              return DropdownMenuItem<int>(
+                value: flock.id!,
+                child: Text(flock.name),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedFlockId = value;
+              });
+            },
           ),
+
           const SizedBox(height: 16),
 
           // Conditionally render fields based on toggle

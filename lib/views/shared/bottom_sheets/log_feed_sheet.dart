@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultrypro/models/app_model.dart';
+import 'package:poultrypro/viewModels/Providers/flock_provider.dart';
+import 'package:poultrypro/views/shared/bottom_sheets/custom_dropdown_field.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/custom_form_field.dart';
 import 'package:poultrypro/viewModels/Providers/feed_provider.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/sheet_header.dart';
@@ -15,6 +17,7 @@ class LogFeedSheet extends ConsumerStatefulWidget {
 class _LogFeedSheetState extends ConsumerState<LogFeedSheet> {
   final _qtyController = TextEditingController();
   final _typeController = TextEditingController();
+  int? _selectedFlockId; // State for dropdown
 
   @override
   void dispose() {
@@ -24,7 +27,7 @@ class _LogFeedSheetState extends ConsumerState<LogFeedSheet> {
   }
 
   void _saveLog() {
-    if (_qtyController.text.isEmpty) return;
+    if (_selectedFlockId == null || _qtyController.text.isEmpty) return;
 
     final newLog = FeedLog(
       id: DateTime.now().millisecondsSinceEpoch % 10000,
@@ -42,6 +45,8 @@ class _LogFeedSheetState extends ConsumerState<LogFeedSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final flocks = ref.watch(flockProvider); // Get the flocks
+
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
@@ -58,9 +63,21 @@ class _LogFeedSheetState extends ConsumerState<LogFeedSheet> {
         children: [
           const SheetHeader(title: 'Log Feed Usage'),
           const SizedBox(height: 24),
-          const CustomFormField(
+          CustomDropdownField<int>(
             label: 'Target Flock / Batch',
-            hint: 'e.g. Alpha Layers',
+            hint: flocks.isEmpty ? 'No flocks available' : 'Select a flock',
+            value: _selectedFlockId,
+            items: flocks.map((flock) {
+              return DropdownMenuItem<int>(
+                value: flock.id!,
+                child: Text(flock.name),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedFlockId = value;
+              });
+            },
           ),
           const SizedBox(height: 16),
           Row(
