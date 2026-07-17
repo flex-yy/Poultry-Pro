@@ -9,6 +9,7 @@ import 'package:poultrypro/views/shared/bottom_sheets/log_feed_sheet.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/log_health_sheet.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/new_transaction_sheet.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/register_flock_sheet.dart';
+import 'package:poultrypro/views/shopscreen.dart';
 import 'package:poultrypro/views/tasks_screen.dart';
 
 // Import our individual tab views (We will build these next!)
@@ -35,6 +36,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     FlocksScreen(),
     TasksScreen(),
     FinancesScreen(),
+    ShopScreen(),
   ];
 
   void _showActionMenu(BuildContext context) {
@@ -224,8 +226,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
               fontWeight: FontWeight.w600,
               fontSize: 11,
             ),
-            items: const [
-              BottomNavigationBarItem(
+            items: [
+              const BottomNavigationBarItem(
                 icon: Padding(
                   padding: EdgeInsets.only(bottom: 4.0),
                   child: Icon(LucideIcons.home),
@@ -238,26 +240,33 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ),
                 label: 'Home',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Padding(
                   padding: EdgeInsets.only(bottom: 4.0),
                   child: Icon(LucideIcons.layers),
                 ),
                 label: 'Flocks',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Padding(
                   padding: EdgeInsets.only(bottom: 4.0),
                   child: Icon(LucideIcons.calendarCheck),
                 ),
                 label: 'Tasks',
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Padding(
                   padding: EdgeInsets.only(bottom: 4.0),
                   child: Icon(LucideIcons.wallet),
                 ),
                 label: 'Finance',
+              ),
+              const BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4.0),
+                  child: Icon(LucideIcons.store),
+                ),
+                label: 'Shop',
               ),
             ],
           ),

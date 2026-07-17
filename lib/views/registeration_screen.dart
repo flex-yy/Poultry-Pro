@@ -13,9 +13,63 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   // State variables for toggles
-  bool _isCreateFarm = true;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false; // Loading state
+
+  // Add Form Key and Controllers
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  // Handle the Registration logic
+  Future<void> _handleRegister() async {
+    if (_formKey.currentState!.validate()) {
+      // Manual check to ensure passwords match!
+      if (_passwordController.text != _confirmPasswordController.text) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Passwords do not match!',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+        return; // Stop the process
+      }
+
+      setState(() => _isLoading = true);
+
+      // Simulate network or DB creation delay
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const MainShellScreen()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,170 +124,82 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 32),
 
-              // 2. Farm Registration Toggle
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF334155)
-                      : const Color(0xFFF1F5F9), // Slate 700 or 100
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
+              // 3. Input Fields wrapped in a Form
+              Form(
+                key: _formKey,
+                child: Column(
                   children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _isCreateFarm = true),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: _isCreateFarm
-                                ? Theme.of(context).colorScheme.surface
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: _isCreateFarm
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : [],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                LucideIcons.home,
-                                size: 16,
-                                color: _isCreateFarm
-                                    ? (isDark
-                                          ? Colors.white
-                                          : AppColors.textPrimary)
-                                    : AppColors.textSecondary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Create New Farm',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: _isCreateFarm
-                                      ? FontWeight.bold
-                                      : FontWeight.w600,
-                                  color: _isCreateFarm
-                                      ? (isDark
-                                            ? Colors.white
-                                            : AppColors.textPrimary)
-                                      : AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    InputField(
+                      controller: _nameController,
+                      label: 'Full Name',
+                      hint: 'Kwame Appiah',
+                      prefixIcon: LucideIcons.user,
+                      validator: (value) => value == null || value.isEmpty
+                          ? 'Please enter your name'
+                          : null,
                     ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _isCreateFarm = false),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: !_isCreateFarm
-                                ? Theme.of(context).colorScheme.surface
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: !_isCreateFarm
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : [],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                LucideIcons.users,
-                                size: 16,
-                                color: !_isCreateFarm
-                                    ? (isDark
-                                          ? Colors.white
-                                          : AppColors.textPrimary)
-                                    : AppColors.textSecondary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Join Existing',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: !_isCreateFarm
-                                      ? FontWeight.bold
-                                      : FontWeight.w600,
-                                  color: !_isCreateFarm
-                                      ? (isDark
-                                            ? Colors.white
-                                            : AppColors.textPrimary)
-                                      : AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    const SizedBox(height: 20),
+
+                    InputField(
+                      controller: _emailController,
+                      label: 'Email Address',
+                      hint: 'kwame@greenvalley.com',
+                      prefixIcon: LucideIcons.mail,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        if (!value.contains('@')) {
+                          return 'Enter a valid email address';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    InputField(
+                      controller: _passwordController,
+                      label: 'Password',
+                      hint: 'Create a strong password',
+                      prefixIcon: LucideIcons.lock,
+                      isPassword: true,
+                      obscureText: _obscurePassword,
+                      helperText: 'Must be at least 8 characters.',
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a password';
+                        }
+                        if (value.length < 8) {
+                          return 'Password must be at least 8 characters';
+                        }
+                        return null;
+                      },
+                      onTogglePassword: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    InputField(
+                      controller: _confirmPasswordController,
+                      label: 'Confirm Password',
+                      hint: 'Repeat password',
+                      prefixIcon: LucideIcons.shieldCheck,
+                      isPassword: true,
+                      obscureText: _obscureConfirmPassword,
+                      validator: (value) => value == null || value.isEmpty
+                          ? 'Please confirm your password'
+                          : null,
+                      onTogglePassword: () {
+                        setState(
+                          () => _obscureConfirmPassword =
+                              !_obscureConfirmPassword,
+                        );
+                      },
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 32),
-
-              // 3. Input Fields
-              const InputField(
-                label: 'Full Name',
-                hint: 'Kwame Appiah',
-                prefixIcon: LucideIcons.user,
-              ),
-              const SizedBox(height: 20),
-
-              const InputField(
-                label: 'Email Address',
-                hint: 'kwame@greenvalley.com',
-                prefixIcon: LucideIcons.mail,
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 20),
-
-              InputField(
-                label: 'Password',
-                hint: 'Create a strong password',
-                prefixIcon: LucideIcons.lock,
-                isPassword: true,
-                obscureText: _obscurePassword,
-                helperText: 'Must be at least 8 characters.',
-                onTogglePassword: () {
-                  setState(() => _obscurePassword = !_obscurePassword);
-                },
-              ),
-              const SizedBox(height: 20),
-
-              InputField(
-                label: 'Confirm Password',
-                hint: 'Repeat password',
-                prefixIcon: LucideIcons.shieldCheck,
-                isPassword: true,
-                obscureText: _obscureConfirmPassword,
-                onTogglePassword: () {
-                  setState(
-                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                  );
-                },
               ),
               const SizedBox(height: 40),
 
@@ -242,29 +208,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Navigate to Main Shell (Dashboard) on successful registration
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (context) => const MainShellScreen(),
-                      ),
-                      (route) => false, // Clears the navigation stack
-                    );
-                  },
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Create Account',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                  onPressed: _isLoading ? null : _handleRegister,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
+                        )
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Create Account',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(LucideIcons.arrowRight, size: 20),
+                          ],
                         ),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(LucideIcons.arrowRight, size: 20),
-                    ],
-                  ),
                 ),
               ),
               const SizedBox(height: 48),

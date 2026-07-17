@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultrypro/core/theme/app_theme.dart';
 import 'package:poultrypro/models/app_model.dart';
 import 'package:poultrypro/viewModels/Providers/finance_provider.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/custom_form_field.dart';
-import 'package:poultrypro/views/shared/bottom_sheets/sheet_header.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:poultrypro/views/shared/bottom_sheets/sheet_header.dart'; // 1. Import Riverpod
 
+// 4. Change to ConsumerStatefulWidget
 class NewTransactionSheet extends ConsumerStatefulWidget {
   const NewTransactionSheet({super.key});
 
@@ -16,6 +17,8 @@ class NewTransactionSheet extends ConsumerStatefulWidget {
 
 class _NewTransactionSheetState extends ConsumerState<NewTransactionSheet> {
   bool isIncome = true; // Tracks the toggle state
+
+  // 5. Add Controllers to capture input
   final _amountController = TextEditingController();
   final _descController = TextEditingController();
 
@@ -26,6 +29,7 @@ class _NewTransactionSheetState extends ConsumerState<NewTransactionSheet> {
     super.dispose();
   }
 
+  // 6. The logic to bundle the input and save it
   void _saveTransaction() {
     if (_amountController.text.isEmpty || _descController.text.isEmpty) return;
 
@@ -39,6 +43,31 @@ class _NewTransactionSheetState extends ConsumerState<NewTransactionSheet> {
 
     // Tell the provider to add it!
     ref.read(financeProvider.notifier).addTransaction(newTx);
+
+    // Add the Success Snackbar!
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Text(
+              isIncome
+                  ? 'Income recorded successfully!'
+                  : 'Expense recorded successfully!',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isIncome ? AppColors.primaryDark : AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
+      ),
+    );
 
     // Close the sheet
     Navigator.pop(context);
@@ -154,19 +183,19 @@ class _NewTransactionSheetState extends ConsumerState<NewTransactionSheet> {
 
           const SizedBox(height: 24),
           CustomFormField(
-            controller: _amountController,
+            controller: _amountController, // 7. Attach controller
             label: 'Amount (GHS)',
             hint: '0.00',
             keyboardType: TextInputType.number,
-            prefixIcon: Icon(
+            prefixIcon: const Icon(
               Icons.money,
               color: AppColors.textHint,
               size: 20,
-            ), // Placeholder for Cedis icon
+            ),
           ),
           const SizedBox(height: 16),
           CustomFormField(
-            controller: _descController,
+            controller: _descController, // 8. Attach controller
             label: 'Description / Category',
             hint: 'e.g. 5 bags of feed',
           ),
@@ -184,7 +213,7 @@ class _NewTransactionSheetState extends ConsumerState<NewTransactionSheet> {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              onPressed: _saveTransaction,
+              onPressed: _saveTransaction, // 9. Trigger the save function
               child: const Text(
                 'Record Transaction',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

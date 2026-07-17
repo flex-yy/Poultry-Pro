@@ -10,7 +10,9 @@ class InputField extends StatelessWidget {
   final String? helperText;
   final VoidCallback? onTogglePassword;
   final TextInputType keyboardType;
-  final Widget? actionWidget; // 1. Add this new property!
+  final Widget? actionWidget;
+  final TextEditingController? controller; // 1. Add controller
+  final String? Function(String?)? validator; // 2. Add validator
 
   const InputField({
     super.key,
@@ -22,7 +24,9 @@ class InputField extends StatelessWidget {
     this.helperText,
     this.onTogglePassword,
     this.keyboardType = TextInputType.text,
-    this.actionWidget, // 2. Add to constructor
+    this.actionWidget,
+    this.controller, // 3. Add to constructor
+    this.validator, // 4. Add to constructor
   });
 
   @override
@@ -52,7 +56,10 @@ class InputField extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          controller: controller, // 5. Pass it to the TextFormField
+          validator: validator, // 6. Pass it to the TextFormField
           obscureText: obscureText,
+          keyboardType: keyboardType, // Ensure keyboard type is passed
           style: TextStyle(
             color: isDark
                 ? AppColors.darkTextPrimary

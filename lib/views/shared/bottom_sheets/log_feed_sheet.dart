@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:poultrypro/core/theme/app_theme.dart';
 import 'package:poultrypro/models/app_model.dart';
+import 'package:poultrypro/viewModels/Providers/feed_provider.dart';
 import 'package:poultrypro/viewModels/Providers/flock_provider.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/custom_dropdown_field.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/custom_form_field.dart';
-import 'package:poultrypro/viewModels/Providers/feed_provider.dart';
 import 'package:poultrypro/views/shared/bottom_sheets/sheet_header.dart';
 
 class LogFeedSheet extends ConsumerStatefulWidget {
@@ -15,9 +16,10 @@ class LogFeedSheet extends ConsumerStatefulWidget {
 }
 
 class _LogFeedSheetState extends ConsumerState<LogFeedSheet> {
+  int? _selectedFlockId; // State for dropdown
+
   final _qtyController = TextEditingController();
   final _typeController = TextEditingController();
-  int? _selectedFlockId; // State for dropdown
 
   @override
   void dispose() {
@@ -31,7 +33,7 @@ class _LogFeedSheetState extends ConsumerState<LogFeedSheet> {
 
     final newLog = FeedLog(
       id: DateTime.now().millisecondsSinceEpoch % 10000,
-      flockId: 1, // Hardcoded for now
+      flockId: _selectedFlockId!, // Use real ID!
       quantityKg: double.tryParse(_qtyController.text) ?? 0.0,
       feedType: _typeController.text.isNotEmpty
           ? _typeController.text
@@ -40,6 +42,30 @@ class _LogFeedSheetState extends ConsumerState<LogFeedSheet> {
     );
 
     ref.read(feedProvider.notifier).addFeedLog(newLog);
+
+    // Add the Success Snackbar!
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.white),
+            SizedBox(width: 12),
+            Text(
+              'Feed usage logged successfully!',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.primaryDark,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
+      ),
+    );
+
     Navigator.pop(context);
   }
 
@@ -63,6 +89,7 @@ class _LogFeedSheetState extends ConsumerState<LogFeedSheet> {
         children: [
           const SheetHeader(title: 'Log Feed Usage'),
           const SizedBox(height: 24),
+
           CustomDropdownField<int>(
             label: 'Target Flock / Batch',
             hint: flocks.isEmpty ? 'No flocks available' : 'Select a flock',
@@ -79,6 +106,7 @@ class _LogFeedSheetState extends ConsumerState<LogFeedSheet> {
               });
             },
           ),
+
           const SizedBox(height: 16),
           Row(
             children: [

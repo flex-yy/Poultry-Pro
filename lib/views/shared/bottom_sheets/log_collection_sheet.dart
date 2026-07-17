@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:poultrypro/core/theme/app_theme.dart';
 import 'package:poultrypro/models/app_model.dart';
 import 'package:poultrypro/viewModels/Providers/egg_provider.dart';
 import 'package:poultrypro/viewModels/Providers/flock_provider.dart';
@@ -15,25 +16,25 @@ class LogCollectionSheet extends ConsumerStatefulWidget {
 }
 
 class _LogCollectionSheetState extends ConsumerState<LogCollectionSheet> {
-  int? _selectedFlockId;
+  int? _selectedFlockId; // 2. State for the dropdown selection
+
   final _totalController = TextEditingController();
   final _badController = TextEditingController();
 
   @override
-  dispose() {
+  void dispose() {
     _totalController.dispose();
     _badController.dispose();
     super.dispose();
   }
 
   void _saveLog() {
+    // Prevent saving if no flock is selected or total is empty
     if (_selectedFlockId == null || _totalController.text.isEmpty) return;
 
     final newLog = EggLog(
-      id:
-          DateTime.now().millisecondsSinceEpoch %
-          10000, // Unique ID based on timestamp
-      flockId: _selectedFlockId!,
+      id: DateTime.now().millisecondsSinceEpoch % 10000,
+      flockId: _selectedFlockId!, // Use the selected real ID
       totalEggs: int.tryParse(_totalController.text) ?? 0,
       badEggs: int.tryParse(_badController.text) ?? 0,
       date: DateTime.now(),
@@ -41,11 +42,35 @@ class _LogCollectionSheetState extends ConsumerState<LogCollectionSheet> {
 
     ref.read(eggProvider.notifier).addEggLog(newLog);
 
-    Navigator.pop(context); // Close the bottom sheet after saving
+    // Add the Success Snackbar!
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.white),
+            SizedBox(width: 12),
+            Text(
+              'Egg collection logged successfully!',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.primaryDark,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
+      ),
+    );
+
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    // 3. Watch the flock provider to get the real list of flocks!
     final flocks = ref.watch(flockProvider);
 
     return Container(
@@ -60,10 +85,12 @@ class _LogCollectionSheetState extends ConsumerState<LogCollectionSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // Wrap content tightly
+        mainAxisSize: MainAxisSize.min,
         children: [
           const SheetHeader(title: 'Log Collection'),
           const SizedBox(height: 24),
+
+          // 4. The Dropdown Field
           CustomDropdownField<int>(
             label: 'Target Flock',
             hint: flocks.isEmpty ? 'No flocks available' : 'Select a flock',
@@ -81,13 +108,14 @@ class _LogCollectionSheetState extends ConsumerState<LogCollectionSheet> {
               });
             },
           ),
+
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: CustomFormField(
                   controller: _totalController,
-                  label: 'Total Eggs',
+                  label: 'Total Collected',
                   hint: '0',
                   keyboardType: TextInputType.number,
                 ),
@@ -96,7 +124,7 @@ class _LogCollectionSheetState extends ConsumerState<LogCollectionSheet> {
               Expanded(
                 child: CustomFormField(
                   controller: _badController,
-                  label: 'Cracked/Bad',
+                  label: 'Cracked / Bad',
                   hint: '0',
                   keyboardType: TextInputType.number,
                 ),
@@ -109,12 +137,8 @@ class _LogCollectionSheetState extends ConsumerState<LogCollectionSheet> {
             height: 56,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(
-                  0xFFFFE492,
-                ), // The yellow from the mockup
-                foregroundColor: const Color(
-                  0xFF9E7C3E,
-                ), // Darker brownish text
+                backgroundColor: AppColors.primaryDark,
+                foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),

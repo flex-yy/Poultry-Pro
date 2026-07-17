@@ -9,6 +9,7 @@ import 'package:poultrypro/viewModels/Providers/health_provider.dart';
 import 'package:poultrypro/views/dashboard/widgets/net_profit_card.dart';
 import 'package:poultrypro/views/dashboard/widgets/recent_act_item.dart';
 import 'package:poultrypro/views/dashboard/widgets/top_stat_card.dart';
+import 'package:poultrypro/views/profile_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -24,11 +25,11 @@ class DashboardScreen extends ConsumerWidget {
     final today = DateTime.now();
     int eggsToday = 0;
     int totalBadEggs = 0;
-    int totalNoEggs = 0;
+    // int totalNoEggs = 0;
     for (var log in eggLogs) {
       totalBadEggs = log.badEggs;
       // totalNoEggs = (log.totalEggs - log.badEggs);
-      totalNoEggs = log.totalEggs;
+      // totalNoEggs = log.totalEggs;
       if (log.date.year == today.year &&
           log.date.month == today.month &&
           log.date.day == today.day) {
@@ -121,12 +122,24 @@ class DashboardScreen extends ConsumerWidget {
                       ],
                     ),
                     SizedBox(width: 20),
-                    CircleAvatar(
-                      backgroundColor: AppColors.primaryDark,
-                      radius: 20,
-                      child: Text(
-                        'RK',
-                        style: TextStyle(color: Colors.white, fontSize: 14),
+                    GestureDetector(
+                      onTap: () {
+                        // 3. Navigate to the Profile Screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ProfileScreen(),
+                          ),
+                        );
+                      },
+
+                      child: CircleAvatar(
+                        backgroundColor: AppColors.primaryDark,
+                        radius: 20,
+                        child: Text(
+                          'KA',
+                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        ),
                       ),
                     ),
                   ],
@@ -161,7 +174,7 @@ class DashboardScreen extends ConsumerWidget {
                       Expanded(
                         child: TopStatCard(
                           title: 'EGGS TODAY',
-                          value: '$eggsToday / $totalNoEggs',
+                          value: '$eggsToday',
                           icon: LucideIcons.egg,
                           iconBgColor: Colors.orange.shade100,
                           iconColor: Colors.orange.shade400,

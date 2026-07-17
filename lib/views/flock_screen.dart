@@ -102,7 +102,7 @@ class _FlocksScreenState extends ConsumerState<FlocksScreen> {
                           color: AppColors.textSecondary,
                         ),
                         onPressed: () {
-                          // Filter functionality
+                          // Open filter bottom sheet
                         },
                       ),
                     ),
@@ -233,33 +233,9 @@ class _FlocksScreenState extends ConsumerState<FlocksScreen> {
                       bottom: 100,
                       top: 8,
                     ),
-                    // Dynamically map our FILTERED data models!
+                    // Dynamically map our FILTERED data models to our new card!
                     children: displayedFlocks.map((flock) {
-                      // Calculate age dynamically
-                      final days = DateTime.now()
-                          .difference(flock.dateAdded)
-                          .inDays;
-                      final ageString = days > 14
-                          ? 'Week ${days ~/ 7}'
-                          : 'Day $days';
-
-                      return FlockCard(
-                        status: _activeTabIndex == 0
-                            ? 'Active'
-                            : 'Depleted', // Change status badge text
-                        id: '#BATCH-${flock.id.toString().padLeft(3, '0')}',
-                        name: flock.name,
-                        details:
-                            '${flock.breed ?? 'Mixed'} • Housed ${flock.dateAdded.month}/${flock.dateAdded.day}',
-                        age: ageString,
-                        birdCount: flock.currentCount.toString(),
-                        metricText: 'Initial: ${flock.initialCount}',
-                        accentColor: AppColors.primary,
-                        statusBgColor: AppColors.primaryLight,
-                        statusTextColor: AppColors.primaryDark,
-                        metricIcon: LucideIcons.barChart2,
-                        metricIconColor: AppColors.primary,
-                      );
+                      return FlockCard(flock: flock);
                     }).toList(),
                   ),
           ),

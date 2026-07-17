@@ -16,11 +16,11 @@ class LogHealthSheet extends ConsumerStatefulWidget {
 }
 
 class _LogHealthSheetState extends ConsumerState<LogHealthSheet> {
-  bool isMortality = true; // Toggle between Mortality and Vaccination
+  bool isMortality = true; // Toggle state
   int? _selectedFlockId; // Dropdown state
 
   // Controllers for Mortality
-  final _deadbirdsController = TextEditingController();
+  final _birdsLostController = TextEditingController();
   final _causeController = TextEditingController();
 
   // Controllers for Vaccination
@@ -29,7 +29,7 @@ class _LogHealthSheetState extends ConsumerState<LogHealthSheet> {
 
   @override
   void dispose() {
-    _deadbirdsController.dispose();
+    _birdsLostController.dispose();
     _causeController.dispose();
     _vaccineNameController.dispose();
     _adminMethodController.dispose();
@@ -40,29 +40,54 @@ class _LogHealthSheetState extends ConsumerState<LogHealthSheet> {
     if (_selectedFlockId == null) return; // Prevent saving if no flock chosen
 
     final int lostCount = isMortality
-        ? (int.tryParse(_deadbirdsController.text) ?? 0)
+        ? (int.tryParse(_birdsLostController.text) ?? 0)
         : 0;
 
     final newLog = HealthLog(
       id: DateTime.now().millisecondsSinceEpoch % 10000,
-      flockId: 1, // Hardcoded for now
+      flockId: _selectedFlockId!, // Real ID!
       isMortality: isMortality,
-      birdsLost: isMortality
-          ? (int.tryParse(_deadbirdsController.text) ?? 0)
-          : null,
+      birdsLost: isMortality ? lostCount : null,
       details: isMortality
           ? _causeController.text
           : '${_vaccineNameController.text} (${_adminMethodController.text})',
       date: DateTime.now(),
     );
 
+    // 1. Save the health log
     ref.read(healthProvider.notifier).addHealthLog(newLog);
 
+    // 2. IF it's a mortality, update the flock count!
     if (isMortality && lostCount > 0) {
       ref
           .read(flockProvider.notifier)
-          .recordMortality(1, lostCount); // Hardcoded flockId 1 for now
+          .recordMortality(_selectedFlockId!, lostCount); // Real ID!
     }
+
+    // Add the Success Snackbar!
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Text(
+              isMortality
+                  ? 'Mortality recorded successfully.'
+                  : 'Vaccination logged successfully.',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isMortality ? AppColors.error : Colors.purple.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
+      ),
+    );
 
     Navigator.pop(context);
   }
@@ -175,6 +200,7 @@ class _LogHealthSheetState extends ConsumerState<LogHealthSheet> {
           ),
 
           const SizedBox(height: 24),
+
           CustomDropdownField<int>(
             label: 'Target Flock',
             hint: flocks.isEmpty ? 'No flocks available' : 'Select a flock',
@@ -197,7 +223,7 @@ class _LogHealthSheetState extends ConsumerState<LogHealthSheet> {
           // Conditionally render fields based on toggle
           if (isMortality) ...[
             CustomFormField(
-              controller: _deadbirdsController,
+              controller: _birdsLostController,
               label: 'Number of Birds Lost',
               hint: '0',
               keyboardType: TextInputType.number,

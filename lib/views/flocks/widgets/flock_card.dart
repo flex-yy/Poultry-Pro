@@ -1,262 +1,234 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:poultrypro/core/theme/app_theme.dart';
+import 'package:poultrypro/models/app_model.dart';
 
 class FlockCard extends StatelessWidget {
-  final String status;
-  final String id;
-  final String name;
-  final String details;
-  final String age;
-  final String birdCount;
-  final String metricText;
-
-  // Dynamic Colors & Icons
-  final Color accentColor;
-  final Color statusBgColor;
-  final Color statusTextColor;
-  final IconData metricIcon;
-  final Color metricIconColor;
+  final Flock flock;
+  final String lastFed; // We can wire this up to the Feed database later!
 
   const FlockCard({
     super.key,
-    required this.status,
-    required this.id,
-    required this.name,
-    required this.details,
-    required this.age,
-    required this.birdCount,
-    required this.metricText,
-    required this.accentColor,
-    required this.statusBgColor,
-    required this.statusTextColor,
-    required this.metricIcon,
-    required this.metricIconColor,
+    required this.flock,
+    this.lastFed = '2 hours ago', // Defaulting to match your design
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // 1. Dynamic Calculations
+    // Calculate Age in weeks/days
+    final days = DateTime.now().difference(flock.dateAdded).inDays;
+    final ageString = days > 14 ? '${days ~/ 7} Weeks' : '$days Days';
+
+    // Calculate Health Score (Current vs Initial)
+    final int healthScore = flock.initialCount > 0
+        ? ((flock.currentCount / flock.initialCount) * 100)
+              .clamp(0, 100)
+              .toInt()
+        : 100;
+
+    // Design Colors based on the image
+    const Color brandGreen = Color(0xFF10B981);
+    final Color textDark = isDark ? Colors.white : const Color(0xFF1E293B);
+    final Color cardBg = isDark ? AppColors.darkSurface : Colors.white;
+    final Color greyBoxBg = isDark
+        ? AppColors.darkBackground
+        : const Color(0xFFF8FAFC);
+    final Color greyBoxBorder = isDark
+        ? AppColors.darkBorder
+        : const Color(0xFFF1F5F9);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      clipBehavior: Clip.hardEdge,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-        ),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Left Color Accent Line
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(width: 6, color: accentColor),
-          ),
-
-          // 2. Main Card Content
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header: Status, ID, Title, Details & More Icon
-                Row(
+          // --- HEADER ROW (Name, Breed, and Active Bird Count) ---
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: statusBgColor,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  status.toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: statusTextColor,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                id,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textHint,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            name,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : AppColors.lightTextPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            details,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.lightTextSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      LucideIcons.moreVertical,
-                      color: AppColors.textHint,
-                      size: 20,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Stats Grid (Age & Birds)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF0F172A).withValues(alpha: 0.5)
-                        : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'CURRENT AGE',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textHint,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(
-                                  LucideIcons.calendar,
-                                  size: 16,
-                                  color: accentColor,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  age,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark
-                                        ? AppColors.darkTextPrimary
-                                        : AppColors.lightTextPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'ACTIVE BIRDS',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textHint,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(
-                                  LucideIcons.bird,
-                                  size: 16,
-                                  color: accentColor,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  birdCount,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark
-                                        ? AppColors.darkTextPrimary
-                                        : AppColors.lightTextPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Footer Metric
-                Row(
-                  children: [
-                    Icon(metricIcon, size: 16, color: metricIconColor),
-                    const SizedBox(width: 8),
                     Text(
-                      metricText,
+                      flock.name,
                       style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: textDark,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${flock.breed ?? 'Mixed'} • ${flock.birdType}',
+                      style: TextStyle(
+                        fontSize: 14,
                         color: isDark
                             ? AppColors.darkTextSecondary
-                            : AppColors.textSecondary,
+                            : Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-              ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: greyBoxBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: greyBoxBorder),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '${flock.currentCount}', // TIES DIRECTLY TO DATABASE
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'ACTIVE BIRDS',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // --- HEALTH SCORE SECTION ---
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Health Score',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : Colors.grey.shade700,
+                ),
+              ),
+              Text(
+                '$healthScore%',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: brandGreen,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: healthScore / 100,
+              backgroundColor: isDark
+                  ? AppColors.darkBackground
+                  : Colors.grey.shade200,
+              color: brandGreen,
+              minHeight: 8,
             ),
           ),
+
+          const SizedBox(height: 24),
+
+          // --- STATS BOXES (Age & Last Fed) ---
+          Row(
+            children: [
+              _buildStatBox(
+                'AGE',
+                ageString,
+                greyBoxBg,
+                greyBoxBorder,
+                textDark,
+              ),
+              const SizedBox(width: 12),
+              _buildStatBox(
+                'LAST FED',
+                lastFed,
+                greyBoxBg,
+                greyBoxBorder,
+                textDark,
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  // Helper widget to build the grey info boxes at the bottom
+  Widget _buildStatBox(
+    String title,
+    String value,
+    Color bg,
+    Color border,
+    Color textCol,
+  ) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+                color: Colors.grey.shade500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: textCol,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
